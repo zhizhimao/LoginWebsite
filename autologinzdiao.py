@@ -23,16 +23,19 @@
 """
 from selenium import webdriver
 import time
+import requests
+from lxml import etree
 
 browser_opt = webdriver.ChromeOptions()  # 设置是否开启浏览器
 browser_opt.set_headless()
 
 browser = webdriver.Chrome()  # 此参数不开启浏览器 chrome_options=browser_opt webdriver.Chrome(chrome_options=browser_opt)
 browser.set_page_load_timeout(10)   # 防止页面加载个没完等待时间10s
-login_url = 'http://www.zdiao.com/login.asp'
 
 
 def get_cookie():
+    # 获取cookie
+    login_url = 'http://www.zdiao.com/login.asp'
     browser.get(login_url)  # 打开登录网页
     user = browser.find_element_by_id('username')  # 审查元素username的id
     user.clear()  # 清空用户栏中内容
@@ -52,8 +55,22 @@ def get_cookie():
     cookie = "; ".join([item["name"] + "=" + item["value"] for item in browser.get_cookies()])  # 取得cookie 复制到headers = {'Cookie': 'landcode=AB7CAC13%2D9045%2D4DE2%2D9562%2D551598732FDE; ASPSESSIONIDQACBDDTC=GLMABDEDMPHEJOHCMLHAPLCM; Hm_lvt_7ddacf66134d1ba13d31392486ada51e=1537186916; Hm_lpvt_7ddacf66134d1ba13d31392486ada51e=1537186926'}
 #    browser.get_cookies()  # 查看cookie
     browser.page_source  # 获取登录后网页源码
-    browser.quit()  # 关闭浏览器
     return cookie
 
 
+def check_cookie():
+    # 验证获取的cookie是否正常登陆
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.26 Safari/537.36 Core/1.63.4467.400 QQBrowser/10.0.424.400',
+           'Cookie': cookie}
+    url = 'http://www.zdiao.com/u/member.asp'
+    response = requests.get(url, headers=headers)
+    response.encoding = response.apparent_encoding  # 识别编码
+    html = response.text
+    page = etree.HTML(html)
+    title = page.xpath('/html/body/div[1]/div[11]/a/text()')
+    print(title)
+
+
 cookie = get_cookie()
+browser.quit()  # 关闭浏览器
+check_cookie()
